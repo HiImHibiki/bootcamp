@@ -7,7 +7,47 @@ const Bootcamp = require('../models/Bootcamp');
 // @route   GET /api/v1/bootcamps
 // @access  Public
 exports.getBootcamps = asyncHandler(async (req, res, next) => {
-  const bootcamps = await Bootcamp.find();
+  // http://{{host}}:{{port}}/api/v1/bootcamps?averageCost[lte]=10000
+  // http://{{host}}:{{port}}/api/v1/bootcamps?averageCost[lte]=10000&location.city=Boston
+  // http://{{host}}:{{port}}/api/v1/bootcamps?careers[in]=Business
+
+  // http://{{host}}:{{port}}/api/v1/bootcamps?select=name,description
+  // http://{{host}}:{{port}}/api/v1/bootcamps?select=name,description&housing=true
+
+  let query;
+
+  // Copy of req.query
+  const reqQuery = { ...req.query };
+
+  // Fields of exclude
+  const removeFields = ['select', 'sort'];
+  removeFields.forEach((param) => delete reqQuery[param]);
+
+  let queryStr = JSON.stringify(reqQuery);
+  // console.log(reqQuery);
+  // console.log(queryStr);
+
+  // Advance filtering
+  queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, (match) => `$${match}`);
+
+  // Bootcamp.find(param1: { $gt: value})
+  query = Bootcamp.find(JSON.parse(queryStr));
+
+  // Select fields
+  if (req.query.select) {
+    const fields = req.query.select.split(',').join(' ');
+    query = query.select(fields);
+  }
+
+  // Sort
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(',').join(' ');
+    query = query.sort(`'${sortBy}'`);
+  } else {
+    query = query.sort('-createdAt'); // descending by createdAt
+  }
+
+  const bootcamps = await query;
   res.json({
     status: 200,
     success: true,
@@ -84,7 +124,7 @@ exports.deleteBootcamp = asyncHandler(async (req, res, next) => {
 });
 
 // @desc    Get bootcamp within a radius
-// @route   GET /api/v1/bootcamps/radius/:zipcode/:distance (distance in miles)
+// @route   GET /api/v1/bootcamps/radius/:zipcode/:distance (distance in milesb)
 // @access  Private
 exports.getBootcampsInRadius = asyncHandler(async (req, res, next) => {
   const { zipcode, distance } = req.params;
