@@ -26,6 +26,11 @@ const errorHandler = (err, req, res, next) => {
     error = new ErrorResponse(message, 400);
   }
 
+  if (err.name === 'JsonWebTokenError') {
+    const message = 'Not authorized';
+    error = new ErrorResponse(message, 401);
+  }
+
   res.status(error.statusCode || 500).json({
     status: error.statusCode || 500,
     success: false,
