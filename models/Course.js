@@ -34,6 +34,7 @@ const CourseSchema = new mongoose.Schema({
   bootcamp: {
     type: mongoose.Schema.ObjectId,
     ref: 'Bootcamp',
+    required: true,
   },
   user: {
     type: mongoose.Schema.ObjectId,
